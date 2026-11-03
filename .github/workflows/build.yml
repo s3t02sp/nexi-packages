@@ -1,0 +1,38 @@
+name: Build repository
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Пересобрать все пакеты"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "0 4 * * *"   # каждый день: новые версии из AUR (Helium и др.)
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Prepare
+        run: pacman -Syu --noconfirm --needed git
+
+      - uses: actions/checkout@v4
+
+      - name: Build and publish [nexi]
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXI_GPG_PRIVATE_KEY: ${{ secrets.NEXI_GPG_PRIVATE_KEY }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: ./scripts/build-repo.sh

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <rect width="640" height="480" fill="#111214"/>
+  <g transform="translate(232 28) scale(0.1875)">
+    <path d="M136 112h64v288h-64z" fill="#F2F3F5"/><path d="M312 112h64v288h-64z" fill="#F2F3F5"/><path d="M136 112h64l176 288h-64z" fill="#6B8AFD"/>
+  </g>
+  <text x="358" y="86" text-anchor="middle" font-family="Noto Sans" font-weight="600" font-size="30" fill="#F2F3F5">nexi <tspan font-weight="400" fill="#8A8F98">linux</tspan></text>
+</svg>

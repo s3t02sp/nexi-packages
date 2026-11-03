@@ -1,0 +1,78 @@
+# Основано на AUR-пакете "calamares" (https://aur.archlinux.org/packages/calamares).
+# Отличия от AUR-версии:
+#   * включены Python-модули (bootloader, mount, fstab, packages, ... — они
+#     обязательны для установки) — явные зависимости python/python-yaml;
+#   * НЕ пропускаются модули packagechooser/packagechooserq — через них
+#     реализован выбор DE, ядра и загрузчика.
+# Пакет нужен только в live-образе и в установленную систему не попадает.
+
+pkgname=calamares
+pkgver=3.4.2
+pkgrel=100
+pkgdesc="Distribution-independent installer framework (live ISO build)"
+url="https://codeberg.org/Calamares/calamares"
+license=('GPL-3.0-or-later')
+arch=('x86_64')
+
+depends=(
+  'kcoreaddons'
+  'kpmcore'
+  'libpwquality'
+  'python'
+  'python-yaml'
+  'qt6-declarative'
+  'qt6-svg'
+  'yaml-cpp'
+)
+makedepends=(
+  'extra-cmake-modules'
+  'libglvnd'
+  'ninja'
+  'python'
+  'qt6-tools'
+  'qt6-translations'
+)
+optdepends=(
+  'ckbcomp: keyboard layout preview'
+)
+
+source=("$pkgname-$pkgver.tar.gz::$url/releases/download/v$pkgver/$pkgname-$pkgver.tar.gz")
+sha256sums=('733bbbb00dc9f84874bd5c22960952f317ea2537565431179fa2152b2fbfdccc')
+
+build() {
+  local _skip_modules=(
+    dracut
+    dracutlukscfg
+    dummycpp
+    dummyprocess
+    dummypython
+    dummypythonqt
+    initramfs
+    initramfscfg
+    interactiveterminal
+    services-openrc
+  )
+
+  cmake -B build -S "$srcdir/$pkgname-$pkgver" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DWITH_QT6=ON \
+    -DWITH_PYTHON=ON \
+    -DWITH_PYBIND11=ON \
+    -DINSTALL_CONFIG=ON \
+    -DSKIP_MODULES="${_skip_modules[*]}" \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_SCHEMA_TESTING=OFF \
+    -Wno-dev
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  # Убедимся, что Python-поддержка действительно собралась.
+  if ! find "$pkgdir/usr/lib/calamares/modules/bootloader" -name 'main.py' | grep -q .; then
+    echo "ERROR: Python modules were not built" >&2
+    return 1
+  fi
+}

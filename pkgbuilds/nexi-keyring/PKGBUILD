@@ -1,0 +1,15 @@
+# Ключ подписи репозитория [nexi] для pacman.
+pkgname=nexi-keyring
+pkgver=20261031
+pkgrel=1
+pkgdesc="Nexi Linux repository signing key"
+arch=('any')
+url="https://github.com/s3t02sp/nexi-packages"
+license=('CC0-1.0')
+install=nexi-keyring.install
+source=('nexi.gpg' 'nexi-trusted' 'nexi-revoked')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm644 -t "$pkgdir/usr/share/pacman/keyrings" nexi.gpg nexi-trusted nexi-revoked
+}

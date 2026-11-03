@@ -1,0 +1,18 @@
+# Логотип и оформление Nexi Linux для установленной системы
+# (LOGO=distro-logo в /etc/os-release → «О системе», fastfetch и т. п.).
+pkgname=nexi-branding
+pkgver=20261031
+pkgrel=1
+pkgdesc="Nexi Linux logos and artwork"
+arch=('any')
+url="https://github.com/s3t02sp/nexi-packages"
+license=('CC-BY-SA-4.0')
+source=('distro-logo.svg' 'distro-logo.png' 'splash.svg')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm644 distro-logo.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/distro-logo.svg"
+  install -Dm644 distro-logo.png "$pkgdir/usr/share/icons/hicolor/128x128/apps/distro-logo.png"
+  install -Dm644 distro-logo.png "$pkgdir/usr/share/pixmaps/distro-logo.png"
+  install -Dm644 splash.svg      "$pkgdir/usr/share/nexi/artwork/splash.svg"
+}
