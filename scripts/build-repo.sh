@@ -30,7 +30,7 @@ fi
 
 # ── Окружение сборки ──
 msg "Зависимости"
-pacman -Syu --noconfirm --needed base-devel git github-cli
+pacman -Syu --noconfirm --needed base-devel git github-cli jq
 
 id "$BUILD_USER" &>/dev/null || useradd -m -s /bin/bash "$BUILD_USER"
 echo "$BUILD_USER ALL=(ALL) NOPASSWD: /usr/bin/pacman" > /etc/sudoers.d/90-builder
@@ -104,14 +104,35 @@ deps_of() {  # depends + makedepends + checkdepends, без версий
 }
 in_repos() { pacman -Sp --print-format '%n' "$1" >/dev/null 2>&1; }
 
+# pkgbase в AUR для имени пакета: точное имя (в т. ч. часть split-пакета),
+# иначе — самый популярный пакет, который его предоставляет (provides)
+aur_base() {
+  local n="$1" r api="https://aur.archlinux.org/rpc/v5"
+  r="$(curl -fsS --retry 3 "$api/info?arg%5B%5D=$n" | jq -r '.results[0].PackageBase // empty')" || r=""
+  if [[ -z "$r" ]]; then
+    r="$(curl -fsS --retry 3 "$api/search/$n?by=provides" \
+      | jq -r '.results | sort_by(-.NumVotes) | .[0].PackageBase // empty')" || r=""
+  fi
+  echo "$r"
+}
+
 add_aur() {
-  local p="$1"
+  local p="$1" base
   [[ -d "$SRC/$p" ]] && return 0
-  msg "AUR: $p"
-  git clone -q --depth 1 "https://aur.archlinux.org/$p.git" "$SRC/$p" 2>/dev/null || true
-  if [[ ! -f "$SRC/$p/PKGBUILD" ]]; then rm -rf "${SRC:?}/$p"; return 1; fi
-  chown -R "$BUILD_USER:" "$SRC/$p"
-  index_src "$SRC/$p"
+  base="$(aur_base "$p")"
+  [[ -n "$base" ]] || base="$p"
+  if [[ -d "$SRC/$base" ]]; then
+    # уже есть (другая часть того же split-пакета) — но его provides могли не учесть
+    grep -q . "$SRC/$base/.SRCINFO.nexi" 2>/dev/null || index_src "$SRC/$base"
+    [[ -n "${PROVIDED_BY[$p]:-}" ]] || PROVIDED_BY[$p]="$base"
+    return 0
+  fi
+  msg "AUR: $p$([[ "$base" != "$p" ]] && echo " (пакет $base)")"
+  git clone -q --depth 1 "https://aur.archlinux.org/$base.git" "$SRC/$base" 2>/dev/null || true
+  if [[ ! -f "$SRC/$base/PKGBUILD" ]]; then rm -rf "${SRC:?}/$base"; return 1; fi
+  chown -R "$BUILD_USER:" "$SRC/$base"
+  index_src "$SRC/$base"
+  [[ -n "${PROVIDED_BY[$p]:-}" ]] || PROVIDED_BY[$p]="$base"
 }
 
 # Публичный ключ — в пакет nexi-keyring
