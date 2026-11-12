@@ -1,0 +1,19 @@
+post_install() {
+  # ydotool — пользовательская служба (для автоввода в виджетах end-4)
+  systemctl --global enable ydotool.service >/dev/null 2>&1 || true
+  cat <<'MSG'
+==> Оформление Hyprland (end-4) установлено в /etc/skel — его получают новые пользователи.
+    Для существующего пользователя:
+      cp -rn /etc/skel/.config /etc/skel/.local ~/ && nexi-hyprland-setup
+      sudo usermod -aG video,i2c,input $USER
+    На экране входа выбирайте сессию «Hyprland», не «Hyprland (uwsm-managed)».
+MSG
+}
+
+post_upgrade() {
+  systemctl --global enable ydotool.service >/dev/null 2>&1 || true
+}
+
+pre_remove() {
+  systemctl --global disable ydotool.service >/dev/null 2>&1 || true
+}

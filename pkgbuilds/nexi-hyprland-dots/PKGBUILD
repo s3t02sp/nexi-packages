@@ -1,0 +1,97 @@
+# Maintainer: Nexi Linux
+#
+# Оформление Hyprland по умолчанию в Nexi Linux: dotfiles end-4 (illogical-impulse)
+# из форка s3t02sp/dots-hyprland на ЗАКРЕПЛЁННОМ коммите. Обновления автора сами
+# не приходят: чтобы обновиться — синхронизировать форк, поменять _commit и pkgver.
+#
+# Конфиги кладутся в /etc/skel — их получает каждый новый пользователь.
+# Существующим пользователям: cp -rn /etc/skel/.config /etc/skel/.local ~/
+# Окружение Python для виджетов создаёт nexi-hyprland-setup (при установке
+# системы или при первом входе).
+
+pkgname=nexi-hyprland-dots
+pkgver=2026.11.08
+pkgrel=1
+_commit=cb1c428bf841dabccff1b126904047c28e89ba8c        # s3t02sp/dots-hyprland
+_shapes=e31ec4cb4ebf6a46b267f5c42eabf6874916fa16        # подмодуль rounded-polygon-qmljs
+_gsf=251aa5abd30496368f634e54ce2a508fe5a2fdfa           # шрифт Google Sans Flex
+pkgdesc="Nexi Linux: Hyprland desktop based on end-4 illogical-impulse dotfiles (pinned)"
+arch=(any)
+url="https://github.com/s3t02sp/dots-hyprland"
+license=('GPL-3.0-only' 'OFL-1.1')
+depends=(
+  hyprland
+  illogical-impulse-audio
+  illogical-impulse-backlight
+  illogical-impulse-basic
+  illogical-impulse-bibata-modern-classic-bin
+  illogical-impulse-fonts-themes
+  illogical-impulse-hyprland
+  illogical-impulse-kde
+  illogical-impulse-microtex-git
+  illogical-impulse-portal
+  illogical-impulse-python
+  illogical-impulse-quickshell-git
+  illogical-impulse-screencapture
+  illogical-impulse-toolkit
+  illogical-impulse-widgets
+  bluez bluez-utils ydotool
+)
+makedepends=(git)
+install=nexi-hyprland-dots.install
+source=("dots::git+https://github.com/s3t02sp/dots-hyprland.git#commit=${_commit}"
+        "shapes::git+https://github.com/end-4/rounded-polygon-qmljs.git#commit=${_shapes}"
+        "gsf::git+https://github.com/end-4/google-sans-flex.git#commit=${_gsf}"
+        nexi-hyprland-setup
+        nexi-hyprland-setup.service
+        sysusers.conf
+        modules-load.conf)
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+
+package() {
+  local skel="$pkgdir/etc/skel"
+  cd "$srcdir/dots"
+
+  # ~/.config — как делает установщик end-4 (sdata/subcmd-install/3.files-legacy.sh)
+  install -d "$skel/.config"
+  local i
+  for i in dots/.config/*; do
+    [[ "$(basename "$i")" == fish ]] && continue
+    cp -a "$i" "$skel/.config/"
+  done
+  # fish — без conf.d (его установщик тоже не трогает)
+  install -d "$skel/.config/fish"
+  find dots/.config/fish -mindepth 1 -maxdepth 1 ! -name conf.d -exec cp -a {} "$skel/.config/fish/" \;
+  # Подмодуль виджетов Quickshell
+  local shapes="$skel/.config/quickshell/ii/modules/common/widgets/shapes"
+  rm -rf "$shapes"; install -d "$shapes"
+  cp -a "$srcdir/shapes/." "$shapes/"; rm -rf "$shapes/.git"
+
+  # ~/.local/share
+  install -d "$skel/.local/share/icons"
+  cp -a dots/.local/share/konsole "$skel/.local/share/"
+  install -m644 dots/.local/share/icons/illogical-impulse.svg "$skel/.local/share/icons/"
+
+  # Метка «установлено» — чтобы ./setup end-4 не считал систему чистой
+  install -d "$skel/.config/illogical-impulse"
+  : > "$skel/.config/illogical-impulse/installed_true"
+
+  # Требования Python для виджетов (venv создаёт nexi-hyprland-setup)
+  install -Dm644 sdata/uv/requirements.txt "$pkgdir/usr/share/$pkgname/requirements.txt"
+
+  # Шрифт Google Sans Flex (OFL) — системно, а не в ~/.local/share/fonts
+  install -Dm644 "$srcdir"/gsf/*.ttf -t "$pkgdir/usr/share/fonts/illogical-impulse-google-sans-flex/"
+  install -Dm644 "$srcdir/gsf/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/OFL-google-sans-flex"
+
+  # Группа i2c и модуль i2c-dev (яркость внешних мониторов через ddcutil)
+  install -Dm644 "$srcdir/sysusers.conf" "$pkgdir/usr/lib/sysusers.d/$pkgname.conf"
+  install -Dm644 "$srcdir/modules-load.conf" "$pkgdir/usr/lib/modules-load.d/$pkgname.conf"
+
+  # Настройка пользователя: venv Python; служба — запасной вариант при первом входе
+  install -Dm755 "$srcdir/nexi-hyprland-setup" "$pkgdir/usr/bin/nexi-hyprland-setup"
+  install -Dm644 "$srcdir/nexi-hyprland-setup.service" "$pkgdir/usr/lib/systemd/user/nexi-hyprland-setup.service"
+  install -d "$pkgdir/usr/lib/systemd/user/default.target.wants"
+  ln -s ../nexi-hyprland-setup.service "$pkgdir/usr/lib/systemd/user/default.target.wants/nexi-hyprland-setup.service"
+
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
