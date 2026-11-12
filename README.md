@@ -12,6 +12,27 @@ Pacman-репозиторий **[nexi]** для Nexi Linux. Пакеты соб�
 | `helium-browser-bin` | AUR |
 | `ckbcomp` | AUR |
 | `yay-bin`, `paru-bin` | AUR |
+| `nexi-hyprland-dots` | `pkgbuilds/nexi-hyprland-dots` — оформление Hyprland по умолчанию: dotfiles end-4 (illogical-impulse) из форка [s3t02sp/dots-hyprland](https://github.com/s3t02sp/dots-hyprland) на закреплённом коммите |
+| `illogical-impulse-*` | `pkgbuilds/illogical-impulse-*` — зависимости end-4 (из `sdata/dist-arch` форка); Quickshell и MicroTeX на закреплённых коммитах |
+| зависимости из AUR | находятся и собираются автоматически |
+
+### Оформление Hyprland (end-4)
+
+Обновления автора end-4 сами **не приходят**: пакет собирается из форка на
+коммите `_commit` в `pkgbuilds/nexi-hyprland-dots/PKGBUILD`. Чтобы обновиться:
+синхронизировать форк (*Sync fork* на GitHub), проверить, поменять `_commit`
+и `pkgver`, при необходимости обновить `pkgbuilds/illogical-impulse-*` из
+`sdata/dist-arch` форка.
+
+Quickshell использует закрытый API Qt, поэтому версия Qt входит в его
+`pkgver`: после обновления `qt6-base` в Arch ежедневная сборка пересобирает его.
+
+Зависимости из AUR не нужно перечислять в `aur-packages.txt`: сборщик сам
+находит зависимости, которых нет в официальных репозиториях, клонирует их из
+AUR (транзитивно) и собирает в нужном порядке.
+
+Pull request собирается без публикации (`DRY_RUN=1`) — проверка, что пакеты
+собираются.
 
 Сборка запускается при пуше в `main`, вручную (*Run workflow*, можно с
 «Пересобрать все пакеты») и каждый день. Пакет пересобирается только когда

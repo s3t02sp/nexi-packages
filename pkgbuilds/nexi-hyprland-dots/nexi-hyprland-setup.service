@@ -1,0 +1,14 @@
+[Unit]
+Description=Nexi Linux: Python environment for Hyprland widgets (end-4)
+ConditionPathIsDirectory=%h/.config/quickshell/ii
+ConditionPathExists=!%h/.local/state/quickshell/.venv/.nexi-requirements.sha256
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nexi-hyprland-setup
+Restart=on-failure
+RestartSec=60
+
+[Install]
+WantedBy=default.target

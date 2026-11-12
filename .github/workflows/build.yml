@@ -3,6 +3,7 @@ name: Build repository
 on:
   push:
     branches: [ main ]
+  pull_request:              # проверка: собрать изменённые пакеты без публикации
   workflow_dispatch:
     inputs:
       force:
@@ -16,12 +17,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: repo
-  cancel-in-progress: false
+  group: repo-${{ github.event_name == 'pull_request' && github.ref || 'publish' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 300
     container:
       image: archlinux:latest
     steps:
@@ -35,4 +37,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEXI_GPG_PRIVATE_KEY: ${{ secrets.NEXI_GPG_PRIVATE_KEY }}
           FORCE: ${{ inputs.force && '1' || '0' }}
+          DRY_RUN: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: ./scripts/build-repo.sh

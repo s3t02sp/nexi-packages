@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Окружение Python для виджетов end-4 (illogical-impulse): ~/.local/state/quickshell/.venv
+# Делает то же, что install-python-packages установщика end-4, с закреплёнными
+# версиями из /usr/share/nexi-hyprland-dots/requirements.txt.
+#   nexi-hyprland-setup          — для текущего пользователя
+# Запускается установщиком Nexi (postinstall) и службой nexi-hyprland-setup
+# при первом входе, если окружения ещё нет.
+set -euo pipefail
+REQ=/usr/share/nexi-hyprland-dots/requirements.txt
+VENV="${XDG_STATE_HOME:-$HOME/.local/state}/quickshell/.venv"
+STAMP="$VENV/.nexi-requirements.sha256"
+
+# Только если у пользователя оформление end-4
+[[ -d "${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/ii" ]] || { echo "нет ~/.config/quickshell/ii — пропуск"; exit 0; }
+
+want="$(sha256sum "$REQ" | cut -d' ' -f1)"
+if [[ -x "$VENV/bin/python" && "$(cat "$STAMP" 2>/dev/null)" == "$want" ]]; then
+  echo "окружение Python уже готово: $VENV"
+  exit 0
+fi
+
+echo "создаю окружение Python: $VENV"
+mkdir -p "$(dirname "$VENV")"
+rm -rf "$VENV"
+uv venv --prompt .venv "$VENV" -p 3.12
+for i in 1 2 3; do
+  VIRTUAL_ENV="$VENV" uv pip install --python "$VENV/bin/python" -r "$REQ" && break
+  (( i < 3 )) || exit 1
+  sleep $((i * 10))
+done
+echo "$want" > "$STAMP"
+echo "готово"
